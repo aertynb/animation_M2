@@ -8,6 +8,9 @@
  * contient les libs C standards et OpenGl */
 #include <gfl.h>
 
+#include "Link.hpp"
+#include "PMat.hpp"
+
 /* tailles initiales de la fenêtre graphique (en pixels)     */
 #define WWIDTH  720 
 #define WHEIGHT 540
