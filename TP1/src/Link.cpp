@@ -7,5 +7,9 @@ void Link::Connect(PMat& m1, PMat &m2) {
 }
 
 void Link::update_Hook() {
-    
+    float d = GLFsqrdistance(_m1._pos, _m2._pos);
+    auto u = GLFvector(_m1._pos, _m2._pos)/_d;
+    auto F = -_k*(d-_l0)*u
+    _m1._frc += F;
+    _m2._frc -= F;
 }
