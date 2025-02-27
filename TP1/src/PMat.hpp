@@ -5,6 +5,8 @@
 
 class PMat {
 public:
+    PMat() {}
+
     PMat(float m, const GFLpoint& pos, const GFLvector& vit, const GFLvector& frc, int type)
     : _m {m}, _pos {pos}, _vit {vit}, _frc {frc}
     {

@@ -7,6 +7,11 @@
 
 class Link {
 public:
+    Link() 
+    {
+        _m1 = nullptr;
+        
+    };
     void Connect(PMat& m1, PMat& m2);
     void Hook_Spring(float k);
     void Kinetic_Damper(float z);
