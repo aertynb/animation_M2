@@ -9,6 +9,9 @@
 #include <glm/gtx/io.hpp>
 
 #include "utils/cameras.hpp"
+#include "utils/cube.hpp"
+#include "utils/quad.hpp"
+#include "utils/skybox.hpp"
 
 #include <stb_image.h>
 #include <stb_image_write.h>
@@ -86,27 +89,6 @@ void getUniform(const GLProgram &glslProgram)
       glGetUniformLocation(glslProgram.glId(), "uModelViewMatrix");
   normalMatrixLocation =
       glGetUniformLocation(glslProgram.glId(), "uNormalMatrix");
-
-  uLightDirection = glGetUniformLocation(glslProgram.glId(), "uLightDirection");
-  uLightIntensity = glGetUniformLocation(glslProgram.glId(), "uLightIntensity");
-  uBaseColorTexture =
-      glGetUniformLocation(glslProgram.glId(), "uBaseColorTexture");
-  uBaseColorFactor =
-      glGetUniformLocation(glslProgram.glId(), "uBaseColorFactor");
-  uMetallicFactor = glGetUniformLocation(glslProgram.glId(), "uMetallicFactor");
-  uRoughnessFactor =
-      glGetUniformLocation(glslProgram.glId(), "uRoughnessFactor");
-  uMetallicRoughnessTexture =
-      glGetUniformLocation(glslProgram.glId(), "uMetallicRoughnessTexture");
-  uEmissiveFactor = glGetUniformLocation(glslProgram.glId(), "uEmissiveFactor");
-  uEmissiveTexture =
-      glGetUniformLocation(glslProgram.glId(), "uEmissiveTexture");
-  uApplyOcclusion = glGetUniformLocation(glslProgram.glId(), "uApplyOcclusion");
-  uOcclusionFactor =
-      glGetUniformLocation(glslProgram.glId(), "uOcclusionFactor");
-  uOcclusionTexture =
-      glGetUniformLocation(glslProgram.glId(), "uOcclusionTexture");
-  uNormalTexture = glGetUniformLocation(glslProgram.glId(), "uNormalTexture");
 }
 
 int ViewerApplication::run()
@@ -136,7 +118,7 @@ int ViewerApplication::run()
           0.001f * maxDistance, 1.5f * maxDistance);
 
   std::unique_ptr<CameraController> cameraController =
-      std::make_unique<TrackballCameraController>(
+      std::make_unique<FirstPersonCameraController>(
           m_GLFWHandle.window(), 0.5f * maxDistance);
   if (m_hasUserCamera) {
     cameraController->setCamera(m_userCamera);
@@ -144,7 +126,8 @@ int ViewerApplication::run()
     const auto center = glm::vec3(0.f, 0.f, 0.f);
     const auto up = glm::vec3(0, 1, 0);
     const auto eye = glm::vec3(1.f, 1.f, 1.f);
-    cameraController->setCamera(Camera{eye, center, up});
+    cameraController->setCamera(
+        Camera{glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0)});
   }
 
   // const auto textureObjects = createTextureObjects(model);
@@ -174,237 +157,42 @@ int ViewerApplication::run()
 
   getUniform(glslProgram);
 
-  // const auto bindMaterial = [&](const auto materialIndex) {
-  //   if (materialIndex >= 0) {
-  //     const auto &material = model.materials[materialIndex];
-  //     const auto &pbrMetallicRoughness = material.pbrMetallicRoughness;
-  //     if (uBaseColorFactor >= 0) {
-  //       glUniform4f(uBaseColorFactor,
-  //           (float)pbrMetallicRoughness.baseColorFactor[0],
-  //           (float)pbrMetallicRoughness.baseColorFactor[1],
-  //           (float)pbrMetallicRoughness.baseColorFactor[2],
-  //           (float)pbrMetallicRoughness.baseColorFactor[3]);
-  //     }
-  //     if (uBaseColorTexture >= 0) {
-  //       auto textureObject = whiteTexture;
-  //       if (pbrMetallicRoughness.baseColorTexture.index >= 0) {
-  //         const auto &texture =
-  //             model.textures[pbrMetallicRoughness.baseColorTexture.index];
-  //         if (texture.source >= 0) {
-  //           textureObject = textureObjects[texture.source];
-  //         }
+  const auto pathToFaces = "assets/";
 
-  //         glActiveTexture(GL_TEXTURE0);
-  //         glBindTexture(GL_TEXTURE_2D, textureObject);
-  //         glUniform1i(uBaseColorTexture, 0);
-  //       }
-  //     }
-  //     if (uMetallicFactor >= 0) {
-  //       glUniform1f(
-  //           uMetallicFactor, (float)pbrMetallicRoughness.metallicFactor);
-  //     }
-  //     if (uRoughnessFactor >= 0) {
-  //       glUniform1f(
-  //           uRoughnessFactor, (float)pbrMetallicRoughness.roughnessFactor);
-  //     }
-  //     if (uMetallicRoughnessTexture >= 0) {
-  //       auto textureObject = whiteTexture;
-  //       if (pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
-  //         const auto &texture = model.textures[pbrMetallicRoughness
-  //                 .metallicRoughnessTexture.index];
-  //         if (texture.source >= 0) {
-  //           textureObject = textureObjects[texture.source];
-  //         }
+  const std::vector<std::string> faces{"assets/skybox/right.jpg",
+      "assets/skybox/left.jpg", "assets/skybox/top.jpg",
+      "assets/skybox/bottom.jpg", "assets/skybox/front.jpg",
+      "assets/skybox/back.jpg"};
 
-  //         glActiveTexture(GL_TEXTURE1);
-  //         glBindTexture(GL_TEXTURE_2D, textureObject);
-  //         glUniform1i(uMetallicRoughnessTexture, 1);
-  //       }
-  //     }
-  //     if (uEmissiveFactor >= 0) {
-  //       glUniform3f(uEmissiveFactor, (float)material.emissiveFactor[0],
-  //           (float)material.emissiveFactor[1],
-  //           (float)material.emissiveFactor[2]);
-  //     }
-  //     if (uEmissiveTexture >= 0) {
-  //       auto textureObject = 0u;
-  //       if (material.emissiveTexture.index >= 0) {
-  //         const auto &texture =
-  //         model.textures[material.emissiveTexture.index]; if (texture.source
-  //         >= 0) {
-  //           textureObject = textureObjects[texture.source];
-  //         }
+  QuadCustom quad(1, 1);
+  CubeCustom cube(1, 1, 1);
+  Skybox skybox(faces, cube, m_ShadersRootPath);
 
-  //         glActiveTexture(GL_TEXTURE2);
-  //         glBindTexture(GL_TEXTURE_2D, textureObject);
-  //         glUniform1i(uEmissiveTexture, 2);
-  //       }
-  //     }
-  //     if (uOcclusionFactor >= 0) {
-  //       glUniform1f(uOcclusionFactor, material.occlusionTexture.strength);
-  //     }
-  //     if (uOcclusionTexture >= 0) {
-  //       auto textureObject = whiteTexture;
-  //       if (material.emissiveTexture.index >= 0) {
-  //         const auto &texture =
-  //         model.textures[material.occlusionTexture.index]; if (texture.source
-  //         >= 0) {
-  //           textureObject = textureObjects[texture.source];
-  //         }
+  quad.initObj(0, 1, 2);
+  // cube.initObj(0, 1, 2);
 
-  //         glActiveTexture(GL_TEXTURE3);
-  //         glBindTexture(GL_TEXTURE_2D, textureObject);
-  //         glUniform1i(uOcclusionTexture, 3);
-  //       }
-  //     }
-  //     if (uNormalTexture >= 0) {
-  //       auto textureObject = whiteTexture;
-  //       if (material.normalTexture.index >= 0) {
-  //         const auto &texture = model.textures[material.normalTexture.index];
-  //         if (texture.source >= 0) {
-  //           textureObject = textureObjects[texture.source];
-  //         }
+  const auto drawScene = [&](const Camera &camera) {
+    glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    const auto viewMatrix = camera.getViewMatrix();
+    const auto modelMatrix = glm::mat4(1.0f);
 
-  //         glActiveTexture(GL_TEXTURE4);
-  //         glBindTexture(GL_TEXTURE_2D, textureObject);
-  //         glUniform1i(uNormalTexture, 4);
-  //       }
-  //     }
-  //   } else {
-  //     // Apply default material
-  //     // Defined here:
-  //     //
-  //     https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#reference-material
-  //     //
-  //     https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#reference-pbrmetallicroughness3
-  //     if (uBaseColorFactor >= 0) {
-  //       glUniform4f(uBaseColorFactor, 1, 1, 1, 1);
-  //     }
-  //     if (uBaseColorTexture >= 0) {
-  //       glActiveTexture(GL_TEXTURE0);
-  //       glBindTexture(GL_TEXTURE_2D, whiteTexture);
-  //       glUniform1i(uBaseColorTexture, 0);
-  //     }
-  //     if (uRoughnessFactor >= 0) {
-  //       glUniform1f(uRoughnessFactor, 0.f);
-  //     }
-  //     if (uMetallicRoughnessTexture >= 0) {
-  //       glActiveTexture(GL_TEXTURE1);
-  //       glBindTexture(GL_TEXTURE_2D, 0);
-  //       glUniform1i(uMetallicRoughnessTexture, 1);
-  //     }
-  //     if (uEmissiveFactor >= 0) {
-  //       glUniform3f(uEmissiveFactor, 0.f, 0.f, 0.f);
-  //     }
-  //     if (uEmissiveTexture >= 0) {
-  //       glActiveTexture(GL_TEXTURE2);
-  //       glBindTexture(GL_TEXTURE_2D, 0);
-  //       glUniform1i(uEmissiveTexture, 2);
-  //     }
-  //     if (uApplyOcclusion >= 0) {
-  //       glUniform1i(uApplyOcclusion, 0);
-  //     }
-  //     if (uOcclusionFactor >= 0) {
-  //       glUniform1f(uOcclusionFactor, 0.);
-  //     }
-  //     if (uOcclusionTexture >= 0) {
-  //       glActiveTexture(GL_TEXTURE3);
-  //       glBindTexture(GL_TEXTURE_2D, 0);
-  //       glUniform1i(uOcclusionTexture, 3);
-  //     }
-  //     if (uNormalTexture >= 0) {
-  //       glActiveTexture(GL_TEXTURE4);
-  //       glBindTexture(GL_TEXTURE_2D, 0);
-  //       glUniform1i(uNormalTexture, 4);
-  //     }
-  //   }
-  // };
+    glslProgram.use();
 
-  // Lambda function to draw the scene
-  // const auto drawScene = [&](const Camera &camera, glm::vec3 lightDirection,
-  //                            glm::vec3 lightIntensity, bool lightCam,
-  //                            bool occlusionState) {
-  //   glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
-  //   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    getUniform(glslProgram);
 
-  //   const auto viewMatrix = camera.getViewMatrix();
+    quad.draw(modelMatrix, viewMatrix, projMatrix, modelMatrixLocation,
+        modelViewProjMatrixLocation, modelViewMatrixLocation,
+        normalMatrixLocation);
 
-  //   if (uLightDirection * uLightDirection >= 0) {
-  //     glUniform3fv(uLightIntensity, 1, glm::value_ptr(lightIntensity));
-  //     if (lightCam)
-  //       glUniform3fv(uLightDirection, 1, glm::value_ptr(glm::vec3(0, 0, 1)));
-  //     else {
-  //       lightDirection = glm::normalize(
-  //           glm::vec3(viewMatrix * glm::vec4(lightDirection, 0.)));
-  //       glUniform3fv(uLightDirection, 1, glm::value_ptr(lightDirection));
-  //     }
-  //   }
+    // cube.draw(modelMatrix, viewMatrix, projMatrix, modelMatrixLocation,
+    //     modelViewProjMatrixLocation, modelViewMatrixLocation,
+    //     normalMatrixLocation);
 
-  //   if (uApplyOcclusion >= 0) {
-  //     glUniform1i(uApplyOcclusion, occlusionState ? 1 : 0);
-  //   }
-
-  //   // The recursive function that should draw a node
-  //   // We use a std::function because a simple lambda cannot be recursive
-  //   const std::function<void(int, const glm::mat4 &)> drawNode =
-  //       [&](int nodeIdx, const glm::mat4 &parentMatrix) {
-  //         const auto &node = model.nodes[nodeIdx];
-  //         const glm::mat4 modelMatrix =
-  //             getLocalToWorldMatrix(node, parentMatrix);
-
-  //         if (node.mesh >= 0) {
-  //           const auto mvMatrix = viewMatrix * modelMatrix;
-  //           const auto mvpMatrix = projMatrix * mvMatrix;
-  //           const auto normalMatrix = glm::transpose(glm::inverse(mvMatrix));
-
-  //           glUniformMatrix4fv(
-  //               modelMatrixLocation, 1, GL_FALSE,
-  //               glm::value_ptr(modelMatrix));
-  //           glUniformMatrix4fv(modelViewProjMatrixLocation, 1, GL_FALSE,
-  //               glm::value_ptr(mvpMatrix));
-  //           glUniformMatrix4fv(
-  //               modelViewMatrixLocation, 1, GL_FALSE,
-  //               glm::value_ptr(mvMatrix));
-  //           glUniformMatrix4fv(normalMatrixLocation, 1, GL_FALSE,
-  //               glm::value_ptr(normalMatrix));
-
-  //           const auto &vaoRange = meshToVertexArrays[node.mesh];
-  //           const auto &mesh = model.meshes[node.mesh];
-
-  //           for (auto i = 0; i < mesh.primitives.size(); i++) {
-  //             const auto &vaoPrim = vertexArrayObjects[vaoRange.begin + i];
-  //             const auto &primitive = mesh.primitives[i];
-  //             bindMaterial(primitive.material);
-  //             glBindVertexArray(vaoPrim);
-  //             if (primitive.indices >= 0) {
-  //               const auto &accessor = model.accessors[primitive.indices];
-  //               const auto &bufferView =
-  //               model.bufferViews[accessor.bufferView]; const auto byteOffset
-  //               =
-  //                   accessor.byteOffset + bufferView.byteOffset;
-  //               glDrawElements(primitive.mode, accessor.count,
-  //                   accessor.componentType, (const GLvoid *)byteOffset);
-  //             } else {
-  //               const auto accessorIdx =
-  //               (*begin(primitive.attributes)).second; const auto &accessor =
-  //               model.accessors[accessorIdx]; glDrawArrays(primitive.mode, 0,
-  //               accessor.count);
-  //             }
-  //           }
-  //           glBindVertexArray(0);
-  //         }
-  //         for (const auto childNodeIdx : node.children) {
-  //           drawNode(childNodeIdx, modelMatrix);
-  //         }
-  //       };
-
-  //   // Draw the scene referenced by gltf file
-  //   if (model.defaultScene >= 0) {
-  //     for (const auto node : model.scenes[model.defaultScene].nodes) {
-  //       drawNode(node, glm::mat4(1));
-  //     }
-  //   }
-  // };
+    skybox.draw(modelMatrix, viewMatrix, projMatrix, modelMatrixLocation,
+        modelViewProjMatrixLocation, modelViewMatrixLocation,
+        normalMatrixLocation);
+  };
 
   // Uniform variable for light
   glm::vec3 lightDirection(1.f, 1.f, 1.f);
@@ -451,6 +239,8 @@ int ViewerApplication::run()
     // drawScene(camera, lightDirection, lightIntensity, lightCam,
     // occlusionState);
 
+    drawScene(camera);
+
     // GUI code:
     imguiNewFrame();
 
@@ -471,88 +261,8 @@ int ViewerApplication::run()
         ImGui::Text("left: %.3f %.3f %.3f", camera.left().x, camera.left().y,
             camera.left().z);
 
-        static int cameraControllerType = 0;
-        const auto cameraControllerTypeChanged =
-            ImGui::RadioButton("Trackball", &cameraControllerType, 0) ||
-            ImGui::RadioButton("First Person", &cameraControllerType, 1);
-
-        if (cameraControllerTypeChanged) {
-          const auto currentCamera = cameraController->getCamera();
-          if (cameraControllerType == 0) {
-            cameraController = std::make_unique<TrackballCameraController>(
-                m_GLFWHandle.window(), 0.5f * maxDistance);
-          } else {
-            cameraController = std::make_unique<FirstPersonCameraController>(
-                m_GLFWHandle.window(), 0.5f * maxDistance);
-          }
-          cameraController->setCamera(currentCamera);
-        }
-
-        if (ImGui::Button("CLI camera args to clipboard")) {
-          std::stringstream ss;
-          ss << "--lookat " << camera.eye().x << "," << camera.eye().y << ","
-             << camera.eye().z << "," << camera.center().x << ","
-             << camera.center().y << "," << camera.center().z << ","
-             << camera.up().x << "," << camera.up().y << "," << camera.up().z;
-          const auto str = ss.str();
-          glfwSetClipboardString(m_GLFWHandle.window(), str.c_str());
-        }
+        ImGui::End();
       }
-
-      ImGui::CollapsingHeader("Shader");
-      static int shaderControllerType = 0;
-      const auto shaderControllerTypeChanged =
-          ImGui::RadioButton("Normal", &shaderControllerType, 0) ||
-          ImGui::RadioButton("Diffuse Directional", &shaderControllerType, 1) ||
-          ImGui::RadioButton("PBR Directional", &shaderControllerType, 2) ||
-          ImGui::RadioButton("Metallic", &shaderControllerType, 3) ||
-          ImGui::RadioButton("Normal Map", &shaderControllerType, 4);
-
-      if (shaderControllerTypeChanged) {
-        if (shaderControllerType == 0) {
-          glslProgram = compileProgram({m_ShadersRootPath / "forward.vs.glsl",
-              m_ShadersRootPath / "normals.fs.glsl"});
-        } else if (shaderControllerType == 1) {
-          glslProgram = compileProgram({m_ShadersRootPath / "forward.vs.glsl",
-              m_ShadersRootPath / "diffuse_directional_light.fs.glsl"});
-        } else if (shaderControllerType == 2) {
-          glslProgram =
-              compileProgram({m_ShadersRootPath / "forward_v2.vs.glsl",
-                  m_ShadersRootPath / "pbr_directional_light.fs.glsl"});
-        } else if (shaderControllerType == 3) {
-          glslProgram = compileProgram({m_ShadersRootPath / "forward.vs.glsl",
-              m_ShadersRootPath / "metallic_BRDF.fs.glsl"});
-        } else if (shaderControllerType == 4) {
-          glslProgram =
-              compileProgram({m_ShadersRootPath / "forward_v2.vs.glsl",
-                  m_ShadersRootPath / "normal_map.fs.glsl"});
-        }
-        getUniform(glslProgram);
-        glslProgram.use();
-      }
-
-      ImGui::CollapsingHeader("Light");
-      const auto lightDirChange =
-          ImGui::SliderFloat("Theta", &theta, 0, M_PI) ||
-          ImGui::SliderFloat("Phi", &phi, 0, M_PI * 2);
-      if (lightDirChange) {
-        lightDirection = glm::vec3(glm::sin(theta) * glm::cos(phi),
-            glm::cos(phi), glm::sin(theta) * glm::sin(phi));
-      }
-
-      static glm::vec3 lightColor(1.f, 1.f, 1.f);
-      static float lightIntensityFactor = 1.f;
-
-      if (ImGui::ColorEdit3("Color", (float *)&lightColor) ||
-          ImGui::InputFloat("Intensity", &lightIntensityFactor)) {
-        lightIntensity = lightColor * lightIntensityFactor;
-      }
-
-      ImGui::Checkbox("Light from camera", &lightCam);
-
-      ImGui::Checkbox("Occlusion", &occlusionState);
-
-      ImGui::End();
     }
 
     imguiRenderFrame();
