@@ -66,13 +66,12 @@ public:
     const auto mvpMatrix = projMatrix * mvMatrix;
     const auto normalMatrix = glm::transpose(glm::inverse(mvMatrix));
     glUniformMatrix4fv(
-        modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelMatrix));
-    glUniformMatrix4fv(
         modelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
     glUniformMatrix4fv(
         modelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvMatrix));
-    glUniformMatrix4fv(
-        normalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    // glUniformMatrix4fv(
+    //     normalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    //     Error here don't uncomment
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, getVertexCount());
