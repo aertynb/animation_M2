@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glad/glad.h"
+#include "uniform.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -38,6 +39,7 @@ public:
   QuadCustom(GLfloat width, GLfloat height) : m_nVertexCount(0)
   {
     build(width, height); // Build method (implementation in the .cpp)
+    initObj(0, 1, 2);
   }
 
   // Returns a pointer to the data
@@ -51,29 +53,18 @@ public:
     return QuadVertex::sizeOfVertex();
   }
 
-  void initObj(GLuint vPos, GLuint vNorm, GLuint vTex)
-  {
-    initVboPointer();
-    initVaoPointer(vPos, vNorm, vTex);
-  }
-
   void draw(const glm::mat4 &modelMatrix, const glm::mat4 &viewMatrix,
-      const glm::mat4 &projMatrix, GLuint modelMatrixLocation,
-      GLuint modelViewProjMatrixLocation, GLuint modelViewMatrixLocation,
-      GLuint normalMatrixLocation)
-  // TO DO use a struct to pass all args
+      const glm::mat4 &projMatrix, const UniformHandler &handler)
   {
     const auto mvMatrix = viewMatrix * modelMatrix;
     const auto mvpMatrix = projMatrix * mvMatrix;
     const auto normalMatrix = glm::transpose(glm::inverse(mvMatrix));
     glUniformMatrix4fv(
-        modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+        handler.uModelViewProjMatrix, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
     glUniformMatrix4fv(
-        modelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+        handler.uModelViewMatrix, 1, GL_FALSE, glm::value_ptr(mvMatrix));
     glUniformMatrix4fv(
-        modelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvMatrix));
-    glUniformMatrix4fv(
-        normalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+        handler.uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normalMatrix));
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, getVertexCount());
@@ -111,7 +102,6 @@ private:
   // Initializes VAO pointers for position, normal, and texture coordinates
   void initVaoPointer(GLuint vPos, GLuint vNorm, GLuint vTex)
   {
-    std::cout << "quad vao init" << std::endl;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
     glEnableVertexAttribArray(vPos);
@@ -132,7 +122,13 @@ private:
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, getVertexCount() * getVertexSize(),
-        getDataPointer(), GL_STATIC_DRAW);
+    getDataPointer(), GL_STATIC_DRAW);
+  }
+
+  void initObj(GLuint vPos, GLuint vNorm, GLuint vTex)
+  {
+    initVboPointer();
+    initVaoPointer(vPos, vNorm, vTex);
   }
 
   std::vector<QuadVertex> m_Vertices;

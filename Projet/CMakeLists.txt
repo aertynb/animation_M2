@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0048 NEW)
 
-project(gltf-viewer VERSION 0.0.1)
+project(anim-project VERSION 0.0.1)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")

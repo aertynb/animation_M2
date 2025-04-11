@@ -7,12 +7,13 @@
 #include "utils/gltf.hpp"
 #include "utils/images.hpp"
 #include "utils/shaders.hpp"
+#include "utils/sphere.hpp"
+#include "utils/uniform.hpp"
 
 class ViewerApplication
 {
 public:
-  ViewerApplication(const fs::path &appPath, uint32_t width, uint32_t height,
-      const std::string &vertexShader, const std::string &fragmentShader);
+  ViewerApplication(const fs::path &appPath, uint32_t width, uint32_t height);
 
   int run();
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glad/glad.h"
+#include "uniform.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/vec2.hpp>
@@ -31,10 +32,12 @@ struct CubeVertex
 class CubeCustom
 {
 public:
-  // Constructor: Allocates data and builds the vertex attributes.
-  CubeCustom(GLfloat width, GLfloat height, GLfloat depth) : m_nVertexCount(0)
+  // Constructor for the skybox only
+  CubeCustom(GLfloat width, GLfloat height, GLfloat depth) :
+      m_nVertexCount(0), positions{}
   {
     build(width, height, depth); // Build method (implementation in the .cpp)
+    initObj(0, 1, 2);
   }
 
   // Returns a pointer to the data
@@ -51,27 +54,16 @@ public:
   void initObj(GLuint vPos, GLuint vNorm, GLuint vTex)
   {
     initVboPointer();
-    initVaoPointer(vPos, vNorm, vTex);
+    initVaoPointer(vPos, vNorm, vTex); // potential error here ^^
   }
 
   void draw(const glm::mat4 &modelMatrix, const glm::mat4 &viewMatrix,
-      const glm::mat4 &projMatrix, GLuint modelMatrixLocation,
-      GLuint modelViewProjMatrixLocation, GLuint modelViewMatrixLocation,
-      GLuint normalMatrixLocation, GLuint glId)
-  // TO DO use a struct to pass all args
+      const glm::mat4 &projMatrix, GLuint modelViewProjMatrixLocation) const
   {
-    getUniform(glId, modelMatrixLocation, modelViewProjMatrixLocation,
-        modelViewMatrixLocation, normalMatrixLocation);
     const auto mvMatrix = viewMatrix * modelMatrix;
     const auto mvpMatrix = projMatrix * mvMatrix;
-    const auto normalMatrix = glm::transpose(glm::inverse(mvMatrix));
     glUniformMatrix4fv(
         modelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-    glUniformMatrix4fv(
-        modelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvMatrix));
-    // glUniformMatrix4fv(
-    //     normalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    //     Error here don't uncomment
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, getVertexCount());
@@ -79,22 +71,32 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
-  void getUniform(GLuint glId, GLuint modelMatrixLocation,
-      GLuint modelViewProjMatrixLocation, GLuint modelViewMatrixLocation,
-      GLuint normalMatrixLocation)
+  void draw(const glm::mat4 &viewMatrix, const glm::mat4 &projMatrix,
+      UniformHandler handler) const
   {
-    modelMatrixLocation = glGetUniformLocation(glId, "uModelMatrix");
-    modelViewProjMatrixLocation =
-        glGetUniformLocation(glId, "uModelViewProjMatrix");
-    modelViewMatrixLocation = glGetUniformLocation(glId, "uModelViewMatrix");
-    normalMatrixLocation = glGetUniformLocation(glId, "uNormalMatrix");
-  }
+    // for (const auto &position : positions) {
+      const auto mvMatrix =
+          viewMatrix * glm::mat4(1.f);
+      const auto mvpMatrix = projMatrix * mvMatrix;
+      const auto normalMatrix = glm::transpose(glm::inverse(mvMatrix));
+      glUniformMatrix4fv(
+          handler.uModelViewProjMatrix, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+      glUniformMatrix4fv(
+          handler.uModelViewMatrix, 1, GL_FALSE, glm::value_ptr(mvMatrix));
+      glUniformMatrix4fv(
+          handler.uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+      glBindBuffer(GL_ARRAY_BUFFER, vbo);
+      glBindVertexArray(vao);
+      glDrawArrays(GL_TRIANGLES, 0, getVertexCount());
+      glBindVertexArray(0);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+//   }
 
 private:
   // Initializes VAO pointers for position, normal, and texture coordinates
   void initVaoPointer(GLuint vPos, GLuint vNorm, GLuint vTex)
   {
-    std::cout << "quad vao init" << std::endl;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
     glEnableVertexAttribArray(vPos);
@@ -226,4 +228,5 @@ private:
   std::vector<CubeVertex> m_Vertices;
   GLsizei m_nVertexCount; // Number of vertices
   GLuint vao, vbo;
+  std::vector<glm::vec3> positions;
 };

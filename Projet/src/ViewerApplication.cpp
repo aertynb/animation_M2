@@ -17,47 +17,12 @@
 #include <stb_image_write.h>
 #include <tiny_gltf.h>
 
-GLuint modelMatrixLocation, modelViewProjMatrixLocation,
-    modelViewMatrixLocation, normalMatrixLocation, uLightDirection,
-    uLightIntensity, uBaseColorTexture, uBaseColorFactor, uMetallicFactor,
-    uMetallicRoughnessTexture, uRoughnessFactor, uEmissiveFactor,
-    uEmissiveTexture, uApplyOcclusion, uOcclusionFactor, uOcclusionTexture,
-    uNormalTexture;
-
 void keyCallback(
     GLFWwindow *window, int key, int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
     glfwSetWindowShouldClose(window, 1);
   }
-}
-
-bool ViewerApplication::loadGltfFile(tinygltf::Model &model)
-{
-  tinygltf::TinyGLTF loader;
-  std::string err;
-  std::string warn;
-  bool ret =
-      loader.LoadASCIIFromFile(&model, &err, &warn, m_gltfFilePath.string());
-
-  if (ret) {
-    printf("glTF has been loaded sucessfully\n");
-  }
-
-  if (!ret) {
-    printf("Failed to parse glTF\n");
-    return -1;
-  }
-
-  if (!warn.empty()) {
-    printf("Warn: %s\n", warn.c_str());
-  }
-
-  if (!err.empty()) {
-    printf("Err: %s\n", err.c_str());
-  }
-
-  return ret;
 }
 
 std::vector<GLuint> ViewerApplication::createBufferObjects(
@@ -79,43 +44,18 @@ std::vector<GLuint> ViewerApplication::createBufferObjects(
   return bufferObjects;
 }
 
-void getUniform(const GLProgram &glslProgram)
-{
-  modelMatrixLocation =
-      glGetUniformLocation(glslProgram.glId(), "uModelMatrix");
-  modelViewProjMatrixLocation =
-      glGetUniformLocation(glslProgram.glId(), "uModelViewProjMatrix");
-  modelViewMatrixLocation =
-      glGetUniformLocation(glslProgram.glId(), "uModelViewMatrix");
-  normalMatrixLocation =
-      glGetUniformLocation(glslProgram.glId(), "uNormalMatrix");
-}
-
 int ViewerApplication::run()
 {
   // Loader shaders
   auto glslProgram = compileProgram({m_ShadersRootPath / m_vertexShader,
       m_ShadersRootPath / m_fragmentShader});
 
-  // tinygltf::Model model;
-  // loadGltfFile(model);
-
-  std::cout << "Model imported : " << m_gltfFilePath << std::endl;
-
-  // glm::vec3 bboxMin, bboxMax;
-  // computeSceneBounds(model, bboxMin, bboxMax);
-
-  GLuint tangentVBO;
-  glGenBuffers(1, &tangentVBO);
-
-  // ComputeTangents(model);
-
   // Build projection matrix
   const auto diag = glm::vec3(1., 1., 1);
   auto maxDistance = glm::length(diag);
   const auto projMatrix =
       glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
-          0.001f * maxDistance, 1.5f * maxDistance);
+          0.001f, 200.0f);
 
   std::unique_ptr<CameraController> cameraController =
       std::make_unique<FirstPersonCameraController>(
@@ -123,14 +63,12 @@ int ViewerApplication::run()
   if (m_hasUserCamera) {
     cameraController->setCamera(m_userCamera);
   } else {
-    const auto center = glm::vec3(0.f, 0.f, 0.f);
+    const auto center = glm::vec3(0, 0, 0);
     const auto up = glm::vec3(0, 1, 0);
-    const auto eye = glm::vec3(1.f, 1.f, 1.f);
+    const auto eye = glm::vec3(0, 1, -1);
     cameraController->setCamera(
-        Camera{glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0)});
+        Camera{eye, center, up});
   }
-
-  // const auto textureObjects = createTextureObjects(model);
 
   // Gen default texture for object
   float white[] = {1., 1., 1., 1.};
@@ -144,18 +82,11 @@ int ViewerApplication::run()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
-  // const auto bufferObjects = createBufferObjects(model);
-  // bool tangentAccessor = false;
-
-  // std::vector<VaoRange> meshToVertexArrays;
-  // const auto vertexArrayObjects = createVertexArrayObjects(
-  //     model, bufferObjects, meshToVertexArrays, tangentAccessor);
-
   // Setup OpenGL state for rendering
   glEnable(GL_DEPTH_TEST);
   glslProgram.use();
 
-  getUniform(glslProgram);
+  UniformHandler uniforms(glslProgram);
 
   const auto pathToFaces = "assets/";
 
@@ -166,9 +97,8 @@ int ViewerApplication::run()
 
   QuadCustom quad(1, 1);
   CubeCustom cube(1, 1, 1);
-  Skybox skybox(faces, cube, m_ShadersRootPath);
-
-  quad.initObj(0, 1, 2);
+  SphereCustom sphere(1, 32, 32);
+  Skybox skybox(faces, m_ShadersRootPath);
   // cube.initObj(0, 1, 2);
 
   const auto drawScene = [&](const Camera &camera) {
@@ -177,21 +107,15 @@ int ViewerApplication::run()
     const auto viewMatrix = camera.getViewMatrix();
     const auto modelMatrix = glm::mat4(1.0f);
 
+    skybox.draw(modelMatrix, viewMatrix, projMatrix);
+
     glslProgram.use();
 
-    getUniform(glslProgram);
+    sphere.draw(viewMatrix, projMatrix, uniforms);
 
-    quad.draw(modelMatrix, viewMatrix, projMatrix, modelMatrixLocation,
-        modelViewProjMatrixLocation, modelViewMatrixLocation,
-        normalMatrixLocation);
+    cube.draw(viewMatrix, projMatrix, uniforms);
 
-    // cube.draw(modelMatrix, viewMatrix, projMatrix, modelMatrixLocation,
-    //     modelViewProjMatrixLocation, modelViewMatrixLocation,
-    //     normalMatrixLocation);
-
-    skybox.draw(modelMatrix, viewMatrix, projMatrix, modelMatrixLocation,
-        modelViewProjMatrixLocation, modelViewMatrixLocation,
-        normalMatrixLocation);
+    quad.draw(modelMatrix, viewMatrix, projMatrix, uniforms);
   };
 
   // Uniform variable for light
@@ -204,31 +128,6 @@ int ViewerApplication::run()
 
   // Uniform variable for occlusion
   bool occlusionState = true;
-
-  // if (!m_OutputPath.empty()) {
-  //   const auto numComponents = 3;
-  //   std::vector<unsigned char> pixels(
-  //       m_nWindowWidth * m_nWindowHeight * numComponents);
-  //   renderToImage(
-  //       m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data(), [&]()
-  //       {
-  //         const auto camera = cameraController->getCamera();
-  //         drawScene(
-  //             camera, lightDirection, lightIntensity, lightCam,
-  //             occlusionState);
-  //       });
-  //   flipImageYAxis(
-  //       m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data());
-
-  //   // Write png on disk
-  //   const auto strPath = m_OutputPath.string();
-  //   stbi_write_png(
-  //       strPath.c_str(), m_nWindowWidth, m_nWindowHeight, 3, pixels.data(),
-  //       0);
-
-  //   return 0; // Exit, in that mode we don't want to run interactive
-  //             // viewer
-  // }
 
   // Loop until the user closes the window
   for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose();
@@ -285,8 +184,7 @@ int ViewerApplication::run()
 }
 
 ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,
-    uint32_t height, const std::string &vertexShader,
-    const std::string &fragmentShader) :
+    uint32_t height) :
     m_nWindowWidth(width),
     m_nWindowHeight(height),
     m_AppPath{appPath},
@@ -294,14 +192,6 @@ ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,
     m_ImGuiIniFilename{m_AppName + ".imgui.ini"},
     m_ShadersRootPath{m_AppPath.parent_path() / "shaders"}
 {
-  if (!vertexShader.empty()) {
-    m_vertexShader = vertexShader;
-  }
-
-  if (!fragmentShader.empty()) {
-    m_fragmentShader = fragmentShader;
-  }
-
   ImGui::GetIO().IniFilename =
       m_ImGuiIniFilename.c_str(); // At exit, ImGUI will store its windows
                                   // positions in this file
