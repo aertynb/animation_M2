@@ -18,4 +18,5 @@ void main()
 	vViewSpaceNormal = normalize(vec3(uNormalMatrix * vec4(aNormal, 0)));
 	vTexCoords = aTexCoords;
     gl_Position =  uModelViewProjMatrix * vec4(aPosition, 1);
+    gl_PointSize = 10.0;
 }

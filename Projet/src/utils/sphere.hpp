@@ -75,7 +75,6 @@ public:
     void draw(const glm::mat4 &viewMatrix, const glm::mat4 &projMatrix,
         UniformHandler handler) const
     {
-        std::cout << "sphere draw" << std::endl;
         const auto mvMatrix =
             viewMatrix * glm::mat4(1.f);
         const auto mvpMatrix = projMatrix * mvMatrix;

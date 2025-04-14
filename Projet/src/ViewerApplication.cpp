@@ -13,6 +13,8 @@
 #include "utils/quad.hpp"
 #include "utils/skybox.hpp"
 
+#include "physics/Engine.hpp"
+
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include <tiny_gltf.h>
@@ -55,7 +57,7 @@ int ViewerApplication::run()
   auto maxDistance = glm::length(diag);
   const auto projMatrix =
       glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
-          0.001f, 200.0f);
+          0.1f, 200.0f);
 
   std::unique_ptr<CameraController> cameraController =
       std::make_unique<FirstPersonCameraController>(
@@ -99,6 +101,7 @@ int ViewerApplication::run()
   CubeCustom cube(1, 1, 1);
   SphereCustom sphere(1, 32, 32);
   Skybox skybox(faces, m_ShadersRootPath);
+  Engine engine;
   // cube.initObj(0, 1, 2);
 
   const auto drawScene = [&](const Camera &camera) {
@@ -111,17 +114,14 @@ int ViewerApplication::run()
 
     glslProgram.use();
 
-    sphere.draw(viewMatrix, projMatrix, uniforms);
-
-    cube.draw(viewMatrix, projMatrix, uniforms);
-
-    quad.draw(modelMatrix, viewMatrix, projMatrix, uniforms);
+    // sphere.draw(viewMatrix, projMatrix, uniforms);
+    engine.draw(viewMatrix, projMatrix, uniforms);
   };
 
   // Uniform variable for light
   glm::vec3 lightDirection(1.f, 1.f, 1.f);
   glm::vec3 lightIntensity(1.f, 1.f, 1.f);
-  glm::vec3 color = {1.f, 1.f, 1.f};
+  glm::vec3 color(1.f, 1.f, 1.f);
   float theta = 1.f;
   float phi = 1.f;
   bool lightCam = false;
