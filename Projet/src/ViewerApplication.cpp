@@ -198,5 +198,7 @@ ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,
 
   glfwSetKeyCallback(m_GLFWHandle.window(), keyCallback);
 
+  glfwSetInputMode(m_GLFWHandle.window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
   printGLVersion();
 }

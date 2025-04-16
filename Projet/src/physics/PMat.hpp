@@ -8,10 +8,12 @@ class PMat
 
 public:
   enum Model { LEAP_FROG, EULER_EXPLICIT, FIXE };
+  glm::vec3 _pos;
+  
 
 private:
   float _m; // masse
-  glm::vec3 _pos;
+  
   glm::vec3 _vit;
   glm::vec3 _frc; // Vecteur d'accumulation des forces
   std::function<void(float h)> _update;
@@ -79,6 +81,7 @@ public:
   {
     // std::cout << "BF add _frc.x " << _frc.x << std::endl;
 
+
     _frc += vector;
 
     // std::cout << "AF add _frc.x " << _frc.x << std::endl;
@@ -86,7 +89,7 @@ public:
 
   void subForce(glm::vec3 &vector) { _frc = vector - _frc; }
 
-  glm::vec3 position() const { return _pos; }
+  glm::vec3& position() { return _pos; }
 
   void updateX(float step) { _pos.x += step; }
 
