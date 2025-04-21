@@ -67,7 +67,7 @@ int ViewerApplication::run()
   } else {
     const auto center = glm::vec3(0, 0, 0);
     const auto up = glm::vec3(0, 1, 0);
-    const auto eye = glm::vec3(0, 1, -1);
+    const auto eye = glm::vec3(0, 0, -1);
     cameraController->setCamera(
         Camera{eye, center, up});
   }
