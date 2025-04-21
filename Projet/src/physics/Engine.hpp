@@ -23,8 +23,8 @@ public:
   Engine()
   {
     // Create PMats
-    auto p1 = std::make_shared<PMat>(PMat::Type::FIXE, 1.f, glm::vec3(-1.f, 0.f, 0.f), glm::vec3(0.f));
-    auto p2 = std::make_shared<PMat>(PMat::Type::LEAP_FROG, 1.f, glm::vec3(1.f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f));
+    auto p1 = std::make_shared<PMat>(PMat::Type::FIXE, m, glm::vec3(0.5f, 0.f, 0.f), glm::vec3(0.f));
+    auto p2 = std::make_shared<PMat>(PMat::Type::LEAP_FROG, m, glm::vec3(-0.5f, 0.f, 0.f), glm::vec3(0.f, 0.f, 0.f));
 
     _pmats.push_back(p1);
     _pmats.push_back(p2);
@@ -54,9 +54,12 @@ public:
 
   void update() 
 { 
+  // 0. Update steps
+  h = 1.f / Fe;
+
   // 1. Clear all forces
-  for (auto& pmat : _pmats) {
-    pmat->_frc = glm::vec3(0.f); // Clear force buffer
+  for (auto& pmat : _pmats) {    
+    pmat->_frc += pmat->_m * g; // Apply gravity
   }
 
   // 2. Apply forces via links (springs, damping, etc.)
@@ -102,17 +105,18 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
-private:
-  std::vector<std::shared_ptr<PMat>> _pmats;
-  std::vector<std::shared_ptr<Link>> _links;
-
-  float Fe = 1000.f;
+  
+  float Fe = 100.f;
   float h = 1.f / Fe;
   float m = 1.f;
   float k = 100.f; 
   float z = 2.f * std::sqrt(k * m);
   float s = 1.2f;                // Allows for 20% stretch before ignoring the spring
   // float l0 = 0.2f;
+
+private:
+  std::vector<std::shared_ptr<PMat>> _pmats;
+  std::vector<std::shared_ptr<Link>> _links;
   glm::vec3 g {0.f, -9.81f, 0.f}; // Realistic Earth gravity
 
   GLuint vbo_pmat = 0, vbo_link = 0, vao = 0;

@@ -67,7 +67,7 @@ int ViewerApplication::run()
   } else {
     const auto center = glm::vec3(0, 0, 0);
     const auto up = glm::vec3(0, 1, 0);
-    const auto eye = glm::vec3(0, 0, -1);
+    const auto eye = glm::vec3(0, 0, -2);
     cameraController->setCamera(
         Camera{eye, center, up});
   }
@@ -118,16 +118,9 @@ int ViewerApplication::run()
     engine.draw(viewMatrix, projMatrix, uniforms);
   };
 
-  // Uniform variable for light
-  glm::vec3 lightDirection(1.f, 1.f, 1.f);
-  glm::vec3 lightIntensity(1.f, 1.f, 1.f);
-  glm::vec3 color(1.f, 1.f, 1.f);
-  float theta = 1.f;
-  float phi = 1.f;
-  bool lightCam = false;
+  bool modifiedConstants = false;
 
-  // Uniform variable for occlusion
-  bool occlusionState = true;
+  float Fe = engine.Fe, m = engine.m, k = engine.k, z = engine.z, s = engine.s;
 
   // Loop until the user closes the window
   for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose();
@@ -148,20 +141,19 @@ int ViewerApplication::run()
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
           1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("eye: %.3f %.3f %.3f", camera.eye().x, camera.eye().y,
+        ImGui::Text("position: %.3f %.3f %.3f", camera.eye().x, camera.eye().y,
             camera.eye().z);
-        ImGui::Text("center: %.3f %.3f %.3f", camera.center().x,
-            camera.center().y, camera.center().z);
-        ImGui::Text(
-            "up: %.3f %.3f %.3f", camera.up().x, camera.up().y, camera.up().z);
-
-        ImGui::Text("front: %.3f %.3f %.3f", camera.front().x, camera.front().y,
-            camera.front().z);
-        ImGui::Text("left: %.3f %.3f %.3f", camera.left().x, camera.left().y,
-            camera.left().z);
-
-        ImGui::End();
       }
+
+      if (ImGui::CollapsingHeader("Constants", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::SliderFloat("Fe", &Fe, 50.f, 2000.f)) engine.Fe = Fe;
+        if (ImGui::SliderFloat("Masse", &m, 1.f, 20.f)) engine.m = m;
+        if (ImGui::SliderFloat("Spring stiffness (k)", &k, 0.f, 200.f)) engine.k = k;
+        if (ImGui::SliderFloat("Damping (z)", &z, 0.f, 20.f)) engine.z = z;
+        if (ImGui::SliderFloat("Adhesion range (s)", &s, 0.f, 20.f)) engine.s = s;
+      }
+
+      ImGui::End();
     }
 
     imguiRenderFrame();
@@ -198,7 +190,7 @@ ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,
 
   glfwSetKeyCallback(m_GLFWHandle.window(), keyCallback);
 
-  glfwSetInputMode(m_GLFWHandle.window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  // glfwSetInputMode(m_GLFWHandle.window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
   printGLVersion();
 }

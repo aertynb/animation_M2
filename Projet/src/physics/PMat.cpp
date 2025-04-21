@@ -1,6 +1,6 @@
 #include "PMat.hpp"
 
-PMat::PMat(Type type, float m, const glm::vec3& pos, const glm::vec3& vit)
+PMat::PMat(Type type, float& m, const glm::vec3& pos, const glm::vec3& vit)
 : _pos {pos}
 , _vit {vit}
 , _m {m}

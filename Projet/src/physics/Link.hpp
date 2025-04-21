@@ -6,14 +6,14 @@ class Link
 {
 public:
   std::function<void()> _update;
-  
+
   enum Type {
     HOOK, DAMPER, DAMPED_HOOK, COND_DAMPED_HOOK
   };
   
   // constructeurs
 
-  Link(Type type, std::shared_ptr<PMat> M1, std::shared_ptr<PMat> M2, float k, float z, float s);
+  Link(Type type, std::shared_ptr<PMat> M1, std::shared_ptr<PMat> M2, float& k, float& z, float& s);
 
   // moteurs
 
@@ -30,6 +30,6 @@ public:
   }
 
 private:
-  float _k, _z, _s, _l0;
+  float &_k, &_z, &_s, _l0;
   std::shared_ptr<PMat> _M1, _M2;
 };
