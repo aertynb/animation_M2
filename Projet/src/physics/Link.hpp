@@ -29,6 +29,27 @@ public:
     _M2->_update(h);
   }
 
+  void setType(Type type) {
+      switch(type) {
+        case Type::HOOK : {
+            _update = [this]() {update_Hook();};
+            break;
+        }
+        case Type::DAMPER : {
+            _update = [this]() {update_Damper();};
+            break;
+        }
+        case Type::DAMPED_HOOK : {
+            _update = [this]() {update_Damped_Hook();};
+            break;
+        }
+        case Type::COND_DAMPED_HOOK : {
+            _update = [this]() {update_Cond_Damped_Hook();};
+            break;
+        }
+    }
+  }
+
 private:
   float &_k, &_z, &_s, _l0;
   std::shared_ptr<PMat> _M1, _M2;

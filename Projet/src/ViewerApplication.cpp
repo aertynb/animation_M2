@@ -121,6 +121,7 @@ int ViewerApplication::run()
   bool modifiedConstants = false;
 
   float Fe = engine.Fe, m = engine.m, k = engine.k, z = engine.z, s = engine.s;
+  static int type = (int)engine.type;
 
   // Loop until the user closes the window
   for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose();
@@ -151,6 +152,15 @@ int ViewerApplication::run()
         if (ImGui::SliderFloat("Spring stiffness (k)", &k, 0.f, 200.f)) engine.k = k;
         if (ImGui::SliderFloat("Damping (z)", &z, 0.f, 20.f)) engine.z = z;
         if (ImGui::SliderFloat("Adhesion range (s)", &s, 0.f, 20.f)) engine.s = s;
+
+        modifiedConstants = ImGui::RadioButton("Hook",             &type, 0)
+                        ||  ImGui::RadioButton("Damped",           &type, 1)
+                        ||  ImGui::RadioButton("Damped Hook",      &type, 2)
+                        ||  ImGui::RadioButton("Cond Damped Hook", &type, 3);
+        if (modifiedConstants) {
+          engine.setType((Link::Type)type); // set new type
+        }
+
       }
 
       ImGui::End();

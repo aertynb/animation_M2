@@ -6,24 +6,7 @@ Link::Link(Type type, std::shared_ptr<PMat> M1, std::shared_ptr<PMat> M2, float&
     _M1 = M1; _M2 = M2;
     _l0 = glm::distance(_M1->_pos, _M2->_pos);
 
-    switch(type) {
-        case Type::HOOK : {
-            _update = [this]() {update_Hook();};
-            break;
-        }
-        case Type::DAMPER : {
-            _update = [this]() {update_Damper();};
-            break;
-        }
-        case Type::DAMPED_HOOK : {
-            _update = [this]() {update_Damped_Hook();};
-            break;
-        }
-        case Type::COND_DAMPED_HOOK : {
-            _update = [this]() {update_Cond_Damped_Hook();};
-            break;
-        }
-    }
+    setType(type);
 }
 
 // Ressort linéaire

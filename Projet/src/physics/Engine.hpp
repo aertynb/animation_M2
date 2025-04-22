@@ -21,6 +21,7 @@ class Engine
 {
 public:
   Engine()
+  : type {Link::HOOK}
   {
     // Create PMats
     auto p1 = std::make_shared<PMat>(PMat::Type::FIXE, m, glm::vec3(0.5f, 0.f, 0.f), glm::vec3(0.f));
@@ -105,19 +106,26 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
+  void setType(Link::Type _type) {
+    type = _type;
+    for (auto& link : _links) {
+      link->setType(type);
+    }
+  }
+
   
-  float Fe = 100.f;
+  float Fe = 100000.f;
   float h = 1.f / Fe;
   float m = 1.f;
   float k = 100.f; 
   float z = 2.f * std::sqrt(k * m);
   float s = 1.2f;                // Allows for 20% stretch before ignoring the spring
+  Link::Type type;
   // float l0 = 0.2f;
 
 private:
   std::vector<std::shared_ptr<PMat>> _pmats;
   std::vector<std::shared_ptr<Link>> _links;
   glm::vec3 g {0.f, -9.81f, 0.f}; // Realistic Earth gravity
-
   GLuint vbo_pmat = 0, vbo_link = 0, vao = 0;
 };

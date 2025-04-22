@@ -64,11 +64,6 @@ public:
     const auto mvpMatrix = projMatrix * mvMatrix;
     glUniformMatrix4fv(
         modelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-<<<<<<< HEAD
-    glUniformMatrix4fv(
-        modelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvMatrix));
-=======
->>>>>>> f14f25752a3e7c18fbe0dc4b70efbd411af583f4
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, getVertexCount());
