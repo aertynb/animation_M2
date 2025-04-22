@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <numeric>
+#include <chrono>
+#include <thread>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -104,7 +106,7 @@ int ViewerApplication::run()
   Engine engine;
   // cube.initObj(0, 1, 2);
 
-  const auto drawScene = [&](const Camera &camera) {
+  const auto drawScene = [&](const Camera &camera, double h) {
     glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     const auto viewMatrix = camera.getViewMatrix();
@@ -114,8 +116,7 @@ int ViewerApplication::run()
 
     glslProgram.use();
 
-    // sphere.draw(viewMatrix, projMatrix, uniforms);
-    engine.draw(viewMatrix, projMatrix, uniforms);
+    engine.draw(h, viewMatrix, projMatrix, uniforms);
   };
 
   bool modifiedConstants = false;
@@ -123,16 +124,26 @@ int ViewerApplication::run()
   float Fe = engine.Fe, m = engine.m, k = engine.k, z = engine.z, s = engine.s;
   static int type = (int)engine.type;
 
+  double previousTime = glfwGetTime();
+
   // Loop until the user closes the window
   for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose();
       ++iterationCount) {
+
+    double currentTime = glfwGetTime();
+    double dt = currentTime - previousTime;
+    previousTime = currentTime;
+
+    glfwSwapInterval(0); // <- V-Sync OFF (uncapped FPS)
+    
+    auto frameStart = std::chrono::high_resolution_clock::now();
+
     const auto seconds = glfwGetTime();
 
     const auto camera = cameraController->getCamera();
     // drawScene(camera, lightDirection, lightIntensity, lightCam,
     // occlusionState);
-
-    drawScene(camera);
+    drawScene(camera, dt);
 
     // GUI code:
     imguiNewFrame();
@@ -147,10 +158,10 @@ int ViewerApplication::run()
       }
 
       if (ImGui::CollapsingHeader("Constants", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::SliderFloat("Fe", &Fe, 50.f, 2000.f)) engine.Fe = Fe;
+        if (ImGui::SliderFloat("Fe", &Fe, 50.f, 4000.f)) engine.Fe = Fe;
         if (ImGui::SliderFloat("Masse", &m, 1.f, 20.f)) engine.m = m;
-        if (ImGui::SliderFloat("Spring stiffness (k)", &k, 0.f, 200.f)) engine.k = k;
-        if (ImGui::SliderFloat("Damping (z)", &z, 0.f, 20.f)) engine.z = z;
+        if (ImGui::SliderFloat("Spring stiffness (k)", &k, 0.f, 500.f)) engine.k = k;
+        if (ImGui::SliderFloat("Damping (z)", &z, 0.f, 500.f)) engine.z = z;
         if (ImGui::SliderFloat("Adhesion range (s)", &s, 0.f, 20.f)) engine.s = s;
 
         modifiedConstants = ImGui::RadioButton("Hook",             &type, 0)
@@ -178,6 +189,7 @@ int ViewerApplication::run()
     }
 
     m_GLFWHandle.swapBuffers(); // Swap front and back buffers
+
   }
 
   // TODO clean up allocated GL data

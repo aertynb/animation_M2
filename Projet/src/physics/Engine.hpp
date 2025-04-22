@@ -53,10 +53,11 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
-  void update() 
+  void update(double _h) 
 { 
   // 0. Update steps
-  h = 1.f / Fe;
+  std::cout << _h << std::endl; 
+  h = 1./Fe - _h;
 
   // 1. Clear all forces
   for (auto& pmat : _pmats) {    
@@ -81,9 +82,9 @@ public:
 }
 
 
-  void draw(const glm::mat4& viewMatrix, const glm::mat4& projMatrix, const UniformHandler& handler) 
+  void draw(double _h, const glm::mat4& viewMatrix, const glm::mat4& projMatrix, const UniformHandler& handler) 
   {
-    update(); // make sure data is fresh
+    update(_h); // make sure data is fresh
 
     glm::mat4 mvMatrix = viewMatrix * glm::mat4(1.f);
     glm::mat4 mvpMatrix = projMatrix * mvMatrix;
@@ -114,7 +115,7 @@ public:
   }
 
   
-  float Fe = 100000.f;
+  float Fe = 1000.f;
   float h = 1.f / Fe;
   float m = 1.f;
   float k = 100.f; 
