@@ -1,5 +1,6 @@
 *.imgui.ini
 build
+build/bin/assets
 dist
 gltf-sample-models
 output-images
